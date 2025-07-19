@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Roue des Choix</title>
+  <title>Rouleau des Choix</title>
   <style>
     body {
       background: #fffbe6;
@@ -15,11 +15,38 @@
     h1 {
       color: #333;
     }
-    canvas {
+    .slot-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 200px;
+      overflow: hidden;
       margin: 2rem auto;
-      display: block;
-      max-width: 100%;
+      border: 5px solid #ff6f61;
+      border-radius: 10px;
+      width: 300px;
+      background: white;
+      box-shadow: 0 0 10px rgba(0,0,0,0.2);
     }
+    .slot {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      animation: spin 2s ease-out forwards;
+    }
+    .slot-item {
+      font-size: 24px;
+      padding: 1rem;
+    }
+    .slot-item img {
+      max-height: 80px;
+      margin-top: 0.5rem;
+    }
+    @keyframes spin {
+      0% { transform: translateY(0); }
+      100% { transform: translateY(calc(-100% * var(--offset))); }
+    }
+
     button {
       padding: 1rem 2rem;
       font-size: 1rem;
@@ -37,25 +64,24 @@
       font-size: 1rem;
       margin: 0.5rem;
     }
-    .form-group {
-      margin-top: 1rem;
-    }
   </style>
 </head>
 <body>
-  <h1>🎯 Roue des Choix 🎯</h1>
-  <canvas id="wheelCanvas" width="500" height="500"></canvas>
-  <br>
-  <button onclick="spinWheel()">Tourner la roue</button>
-  <br><br>
+  <h1>🎰 Rouleau des Choix 🎰</h1>
 
-  <div class="form-group">
-    <input type="text" id="newOption" placeholder="Ajouter un jeu ou une série">
+  <div class="slot-container">
+    <div class="slot" id="slot"></div>
+  </div>
+
+  <button onclick="spin()">Lancer</button>
+
+  <div>
+    <input type="text" id="newOption" placeholder="Ajouter un choix">
     <input type="file" id="imageInput" accept="image/*">
     <button onclick="addOption()">Ajouter</button>
   </div>
 
-  <div class="form-group">
+  <div>
     <select id="removeSelect"></select>
     <button onclick="removeOption()">Retirer</button>
   </div>
@@ -63,15 +89,25 @@
   <h2 id="result"></h2>
 
   <script>
-    const canvas = document.getElementById("wheelCanvas");
-    const ctx = canvas.getContext("2d");
-    let options = [
-      { name: "The Office" },
-      { name: "Dark" },
-      { name: "Overcooked" }
-    ];
-    let angle = 0;
-    let spinning = false;
+    let options = [];
+    const slot = document.getElementById("slot");
+
+    function saveOptions() {
+      localStorage.setItem("wheelOptions", JSON.stringify(options));
+    }
+
+    function loadOptions() {
+      const saved = localStorage.getItem("wheelOptions");
+      if (saved) {
+        try {
+          options = JSON.parse(saved);
+        } catch (e) {
+          options = [];
+        }
+      } else {
+        options = [{ name: "The Office" }, { name: "Dark" }, { name: "Overcooked" }];
+      }
+    }
 
     function updateRemoveDropdown() {
       const select = document.getElementById("removeSelect");
@@ -84,71 +120,27 @@
       });
     }
 
-    function drawWheel() {
-      const radius = canvas.width / 2;
-      const arc = (2 * Math.PI) / options.length;
+    function spin() {
+      if (options.length === 0) return;
 
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      options.forEach((option, i) => {
-        const startAngle = i * arc + angle;
-        const endAngle = startAngle + arc;
-
-        ctx.beginPath();
-        ctx.fillStyle = `hsl(${(i * 360) / options.length}, 70%, 60%)`;
-        ctx.moveTo(radius, radius);
-        ctx.arc(radius, radius, radius, startAngle, endAngle);
-        ctx.fill();
-
-        ctx.save();
-        ctx.translate(radius, radius);
-        ctx.rotate(startAngle + arc / 2);
-        ctx.textAlign = "right";
-        ctx.fillStyle = "#fff";
-        ctx.font = "16px sans-serif";
-        ctx.fillText(option.name, radius - 10, 10);
-        ctx.restore();
+      slot.innerHTML = "";
+      const shuffle = [...options, ...options, ...options];
+      shuffle.forEach(opt => {
+        const item = document.createElement("div");
+        item.className = "slot-item";
+        item.innerHTML = `<strong>${opt.name}</strong>` +
+                         (opt.image ? `<br><img src="${opt.image}" />` : "");
+        slot.appendChild(item);
       });
 
-      ctx.beginPath();
-      ctx.fillStyle = "#333";
-      ctx.moveTo(radius, 0);
-      ctx.lineTo(radius - 10, 20);
-      ctx.lineTo(radius + 10, 20);
-      ctx.fill();
-    }
+      const offset = Math.floor(Math.random() * options.length) + options.length * 2;
+      slot.style.setProperty('--offset', offset);
 
-    function spinWheel() {
-      if (spinning || options.length === 0) return;
-      spinning = true;
-
-      const spinTime = 3000 + Math.random() * 2000;
-      const finalAngle = Math.random() * Math.PI * 2;
-      const start = Date.now();
-      const totalRotation = 6 * Math.PI + finalAngle;
-
-      function animate() {
-        const now = Date.now();
-        const elapsed = now - start;
-        const progress = Math.min(elapsed / spinTime, 1);
-        angle = totalRotation * easeOut(progress);
-        drawWheel();
-
-        if (progress < 1) {
-          requestAnimationFrame(animate);
-        } else {
-          const index = Math.floor(((2 * Math.PI - (angle % (2 * Math.PI))) / (2 * Math.PI)) * options.length) % options.length;
-          const selected = options[index];
-          document.getElementById("result").innerHTML = `🎉 Résultat : ${selected.name} 🎉` +
-            (selected.image ? `<br><img src="${selected.image}" width="150" />` : "");
-          spinning = false;
-        }
-      }
-      animate();
-    }
-
-    function easeOut(t) {
-      return 1 - Math.pow(1 - t, 3);
+      setTimeout(() => {
+        const selected = shuffle[offset];
+        document.getElementById("result").innerHTML = `🎉 Résultat : ${selected.name} 🎉` +
+          (selected.image ? `<br><img src="${selected.image}" width="150" />` : "");
+      }, 2000);
     }
 
     function addOption() {
@@ -160,30 +152,30 @@
         const reader = new FileReader();
         reader.onload = function(e) {
           options.push({ name, image: e.target.result });
-          document.getElementById("newOption").value = "";
-          fileInput.value = "";
+          saveOptions();
           updateRemoveDropdown();
-          drawWheel();
         };
         reader.readAsDataURL(fileInput.files[0]);
       } else {
         options.push({ name });
-        document.getElementById("newOption").value = "";
+        saveOptions();
         updateRemoveDropdown();
-        drawWheel();
       }
+
+      document.getElementById("newOption").value = "";
+      fileInput.value = "";
     }
 
     function removeOption() {
       const val = document.getElementById("removeSelect").value;
       options = options.filter(opt => opt.name !== val);
+      saveOptions();
       updateRemoveDropdown();
-      drawWheel();
       document.getElementById("result").innerText = `❌ Supprimé : ${val}`;
     }
 
+    loadOptions();
     updateRemoveDropdown();
-    drawWheel();
   </script>
 </body>
 </html>
