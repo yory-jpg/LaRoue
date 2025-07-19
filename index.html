@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Roue des Choix</title>
+  <style>
+    body {
+      background: #fffbe6;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      text-align: center;
+      padding: 2rem;
+    }
+    h1 {
+      color: #333;
+    }
+    canvas {
+      margin: 2rem auto;
+      display: block;
+      max-width: 100%;
+    }
+    button {
+      padding: 1rem 2rem;
+      font-size: 1rem;
+      border: none;
+      border-radius: 8px;
+      background-color: #ff6f61;
+      color: white;
+      cursor: pointer;
+      margin: 1rem;
+    }
+    input {
+      padding: 0.5rem;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 1rem;
+    }
+    @media (max-width: 600px) {
+      canvas {
+        width: 100%;
+        height: auto;
+      }
+      button, input {
+        width: 90%;
+        font-size: 1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>🎯 Roue des Choix 🎯</h1>
+  <canvas id="wheelCanvas" width="500" height="500"></canvas>
+  <br>
+  <button onclick="spinWheel()">Tourner la roue</button>
+  <br><br>
+  <input type="text" id="newOption" placeholder="Ajouter un jeu ou une série">
+  <button onclick="addOption()">Ajouter</button>
+
+  <h2 id="result"></h2>
+
+  <script>
+    const canvas = document.getElementById("wheelCanvas");
+    const ctx = canvas.getContext("2d");
+    let options = [
+      "The Heaven Official's Blessing", "Desperate Housewifes", "MZDS", "Sasaki et Miyano",
+      "Link Click", "SK8 the Infinity", "Given", "Stranger by the Shore",
+      "Yes Ka No Ka Hanbun Ka", "Banana Fish", "No 6", "Seraph of the End",
+      "Vanitas No Carte", "Malcolm", "Heartstone", "League of Legends",
+      "Roblox", "Minecraft", "Undertale", "Wolvesville"
+    ];
+    let angle = 0;
+    let spinning = false;
+
+    function drawWheel() {
+      const radius = canvas.width / 2;
+      const arc = (2 * Math.PI) / options.length;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      options.forEach((option, i) => {
+        const startAngle = i * arc + angle;
+        const endAngle = startAngle + arc;
+
+        ctx.beginPath();
+        ctx.fillStyle = `hsl(${(i * 360) / options.length}, 70%, 60%)`;
+        ctx.moveTo(radius, radius);
+        ctx.arc(radius, radius, radius, startAngle, endAngle);
+        ctx.fill();
+
+        ctx.save();
+        ctx.translate(radius, radius);
+        ctx.rotate(startAngle + arc / 2);
+        ctx.textAlign = "right";
+        ctx.fillStyle = "#fff";
+        ctx.font = "16px sans-serif";
+        ctx.fillText(option, radius - 10, 10);
+        ctx.restore();
+      });
+
+      ctx.beginPath();
+      ctx.fillStyle = "#333";
+      ctx.moveTo(radius, 0);
+      ctx.lineTo(radius - 10, 20);
+      ctx.lineTo(radius + 10, 20);
+      ctx.fill();
+    }
+
+    function spinWheel() {
+      if (spinning) return;
+      spinning = true;
+
+      const spinTime = 3000 + Math.random() * 2000;
+      const finalAngle = Math.random() * Math.PI * 2;
+      const start = Date.now();
+      const totalRotation = 6 * Math.PI + finalAngle;
+
+      function animate() {
+        const now = Date.now();
+        const elapsed = now - start;
+        const progress = Math.min(elapsed / spinTime, 1);
+        angle = totalRotation * easeOut(progress);
+        drawWheel();
+
+        if (progress < 1) {
+          requestAnimationFrame(animate);
+        } else {
+          const selected = options[Math.floor(((2 * Math.PI - (angle % (2 * Math.PI))) / (2 * Math.PI)) * options.length) % options.length];
+          document.getElementById("result").innerText = `🎉 Résultat : ${selected} 🎉`;
+          spinning = false;
+        }
+      }
+      animate();
+    }
+
+    function easeOut(t) {
+      return 1 - Math.pow(1 - t, 3);
+    }
+
+    function addOption() {
+      const newVal = document.getElementById("newOption").value.trim();
+      if (newVal && !options.includes(newVal)) {
+        options.push(newVal);
+        document.getElementById("newOption").value = "";
+        drawWheel();
+      }
+    }
+
+    drawWheel();
+  </script>
+</body>
+</html>
