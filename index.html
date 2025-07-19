@@ -2,188 +2,217 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <title>Rouleau des Choix</title>
-    <style>
-        body {
-            font-family: 'Segoe UI', sans-serif;
-            background-color: #fff9e6;
-            text-align: center;
-            padding: 40px;
-        }
+  <meta charset="UTF-8">
+  <title>Rouleau des Choix 🎰</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      text-align: center;
+      background-color: #fff9e6;
+      color: #333;
+      margin: 0;
+      padding: 0;
+    }
 
-        h1 {
-            font-size: 2.5em;
-            margin-bottom: 20px;
-        }
+    h1 {
+      margin-top: 30px;
+      font-size: 2.5em;
+    }
 
-        #roller {
-            width: 300px;
-            height: 240px;
-            margin: 0 auto 20px;
-            overflow: hidden;
-            border: 4px solid #ff6f61;
-            border-radius: 10px;
-            position: relative;
-            background: white;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-        }
+    #slot {
+      margin: 30px auto;
+      width: 320px;
+      height: 260px;
+      border: 4px solid #ff6f61;
+      border-radius: 10px;
+      overflow: hidden;
+      background-color: white;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      position: relative;
+    }
 
-        #rollerContent {
-            position: absolute;
-            top: 0;
-            width: 100%;
-            transition: top 2s ease-in-out;
-        }
+    .choices {
+      display: flex;
+      flex-direction: column;
+      transition: transform 3s cubic-bezier(0.33, 1, 0.68, 1);
+      will-change: transform;
+    }
 
-        .choice {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 80px;
-            border-bottom: 1px solid #eee;
-            font-size: 1.2em;
-            color: #333;
-        }
+    .choice {
+      padding: 12px;
+      font-size: 1.2em;
+      border-bottom: 1px solid #eee;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      height: 80px;
+    }
 
-        .choice img {
-            height: 40px;
-            width: 40px;
-            object-fit: cover;
-            margin-right: 10px;
-            border-radius: 5px;
-        }
+    .choice img {
+      width: 40px;
+      height: 40px;
+      object-fit: contain;
+      border-radius: 6px;
+    }
 
-        #noChoice {
-            color: #888;
-            font-size: 1.1em;
-            margin-top: 20px;
-        }
+    .button {
+      background-color: #ff6f61;
+      border: none;
+      color: white;
+      padding: 12px 24px;
+      margin: 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1em;
+    }
 
-        button {
-            background-color: #ff6f61;
-            color: white;
-            border: none;
-            padding: 10px 25px;
-            margin: 10px;
-            font-size: 1em;
-            border-radius: 8px;
-            cursor: pointer;
-        }
+    .input-container {
+      margin-top: 20px;
+    }
 
-        input[type="text"], input[type="file"] {
-            padding: 10px;
-            margin: 10px;
-            font-size: 1em;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-        }
-    </style>
+    .input-container input, select {
+      padding: 8px;
+      font-size: 1em;
+      margin: 5px;
+    }
+
+    .feedback {
+      margin-top: 20px;
+      font-size: 1.3em;
+      font-weight: bold;
+    }
+
+    #noChoices {
+      color: #999;
+      font-size: 1.2em;
+      margin-top: 40px;
+    }
+  </style>
 </head>
 <body>
-    <h1>🎰 Rouleau des Choix 🎰</h1>
+  <h1>🎰 Rouleau des Choix 🎰</h1>
 
-    <div id="roller">
-        <div id="rollerContent"></div>
-    </div>
+  <div id="slot">
+    <div class="choices" id="choicesContainer"></div>
+    <div id="noChoices">🎲 Aucun choix ajouté</div>
+  </div>
 
-    <button onclick="spin()">Lancer</button>
+  <button class="button" onclick="spin()">Lancer</button>
 
-    <form id="addForm" onsubmit="addChoice(event)">
-        <input type="text" id="choiceText" placeholder="Ajouter un choix">
-        <input type="file" id="choiceImage" accept="image/*">
-        <button type="submit">Ajouter</button>
-    </form>
+  <div class="input-container">
+    <input type="text" id="newChoice" placeholder="Ajouter un choix" />
+    <input type="file" id="choiceImage" accept="image/*">
+    <button class="button" onclick="addChoice()">Ajouter</button>
+  </div>
 
-    <div id="noChoice">🎲 Aucun choix ajouté</div>
+  <div class="input-container">
+    <select id="removeSelect"></select>
+    <button class="button" onclick="removeChoice()">Retirer</button>
+  </div>
 
-    <script>
-        const choices = [];
-        const rollerContent = document.getElementById("rollerContent");
-        const noChoiceMessage = document.getElementById("noChoice");
+  <div class="feedback" id="feedback"></div>
 
-        function updateDisplay() {
-            rollerContent.innerHTML = "";
-            if (choices.length === 0) {
-                noChoiceMessage.style.display = "block";
-                return;
-            }
-            noChoiceMessage.style.display = "none";
+  <script>
+    let choices = JSON.parse(localStorage.getItem('choices')) || [];
 
-            for (let c of choices) {
-                const div = document.createElement("div");
-                div.className = "choice";
+    const container = document.getElementById('choicesContainer');
+    const noChoices = document.getElementById('noChoices');
+    const removeSelect = document.getElementById('removeSelect');
+    const feedback = document.getElementById('feedback');
 
-                if (c.imageURL) {
-                    const img = document.createElement("img");
-                    img.src = c.imageURL;
-                    div.appendChild(img);
-                }
+    function renderChoices() {
+      container.innerHTML = '';
+      removeSelect.innerHTML = '';
+      if (choices.length === 0) {
+        noChoices.style.display = 'block';
+      } else {
+        noChoices.style.display = 'none';
+        choices.forEach((choice, index) => {
+          const div = document.createElement('div');
+          div.className = 'choice';
+          if (choice.image) {
+            const img = document.createElement('img');
+            img.src = choice.image;
+            div.appendChild(img);
+          }
+          const span = document.createElement('span');
+          span.textContent = choice.text;
+          div.appendChild(span);
+          container.appendChild(div);
 
-                const text = document.createElement("span");
-                text.textContent = c.text;
-                div.appendChild(text);
+          const opt = document.createElement('option');
+          opt.value = index;
+          opt.textContent = choice.text;
+          removeSelect.appendChild(opt);
+        });
+      }
+    }
 
-                rollerContent.appendChild(div);
-            }
+    function addChoice() {
+      const text = document.getElementById('newChoice').value.trim();
+      const imageInput = document.getElementById('choiceImage');
+      if (!text) return;
 
-            // clone choices for smoother loop
-            for (let c of choices) {
-                const div = document.createElement("div");
-                div.className = "choice";
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const image = imageInput.files.length > 0 ? e.target.result : null;
+        choices.push({ text, image });
+        localStorage.setItem('choices', JSON.stringify(choices));
+        document.getElementById('newChoice').value = '';
+        imageInput.value = '';
+        renderChoices();
+      };
 
-                if (c.imageURL) {
-                    const img = document.createElement("img");
-                    img.src = c.imageURL;
-                    div.appendChild(img);
-                }
+      if (imageInput.files.length > 0) {
+        reader.readAsDataURL(imageInput.files[0]);
+      } else {
+        reader.onload();  // Pas d’image, mais on continue quand même
+      }
+    }
 
-                const text = document.createElement("span");
-                text.textContent = c.text;
-                div.appendChild(text);
+    function removeChoice() {
+      const index = removeSelect.value;
+      if (index >= 0) {
+        const removed = choices.splice(index, 1)[0];
+        localStorage.setItem('choices', JSON.stringify(choices));
+        feedback.innerHTML = `❌ Supprimé : <strong>${removed.text}</strong>`;
+        renderChoices();
+      }
+    }
 
-                rollerContent.appendChild(div);
-            }
+    function spin() {
+      if (choices.length === 0) return;
 
-            rollerContent.style.top = "0px";
+      const spinList = [...choices, ...choices, ...choices];
+      const visibleCount = 3;
+      const targetIndex = Math.floor(Math.random() * choices.length);
+      const offset = choices.length * 2 + targetIndex;
+
+      container.innerHTML = '';
+      spinList.forEach(choice => {
+        const div = document.createElement('div');
+        div.className = 'choice';
+        if (choice.image) {
+          const img = document.createElement('img');
+          img.src = choice.image;
+          div.appendChild(img);
         }
+        const span = document.createElement('span');
+        span.textContent = choice.text;
+        div.appendChild(span);
+        container.appendChild(div);
+      });
 
-        function addChoice(e) {
-            e.preventDefault();
-            const text = document.getElementById("choiceText").value.trim();
-            const fileInput = document.getElementById("choiceImage");
+      const scrollAmount = offset * 80 - 90;
+      container.style.transform = `translateY(-${scrollAmount}px)`;
 
-            if (!text) return;
+      setTimeout(() => {
+        feedback.innerHTML = `✅ Choix sélectionné : <strong>${choices[targetIndex].text}</strong>`;
+      }, 3000);
+    }
 
-            const reader = new FileReader();
-            reader.onload = function () {
-                const imageURL = reader.result;
-                choices.push({ text, imageURL });
-                updateDisplay();
-                document.getElementById("choiceText").value = "";
-                fileInput.value = "";
-            };
-
-            if (fileInput.files.length > 0) {
-                reader.readAsDataURL(fileInput.files[0]);
-            } else {
-                choices.push({ text, imageURL: null });
-                updateDisplay();
-                document.getElementById("choiceText").value = "";
-            }
-        }
-
-        function spin() {
-            if (choices.length === 0) return;
-            const total = rollerContent.children.length;
-            const index = Math.floor(Math.random() * choices.length);
-            const offset = -index * 80;
-
-            rollerContent.style.transition = "top 2s ease-in-out";
-            rollerContent.style.top = offset + "px";
-        }
-
-        updateDisplay();
-    </script>
+    renderChoices();
+  </script>
 </body>
 </html>
