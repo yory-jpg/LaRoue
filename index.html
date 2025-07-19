@@ -27,20 +27,21 @@
       background-color: #ff6f61;
       color: white;
       cursor: pointer;
-      margin: 1rem;
+      margin: 0.5rem;
     }
-    input {
+    input, select {
       padding: 0.5rem;
       border-radius: 6px;
       border: 1px solid #ccc;
       font-size: 1rem;
+      margin: 0.5rem;
     }
     @media (max-width: 600px) {
       canvas {
         width: 100%;
         height: auto;
       }
-      button, input {
+      button, input, select {
         width: 90%;
         font-size: 1rem;
       }
@@ -55,6 +56,9 @@
   <br><br>
   <input type="text" id="newOption" placeholder="Ajouter un jeu ou une série">
   <button onclick="addOption()">Ajouter</button>
+  <br><br>
+  <select id="removeSelect"></select>
+  <button onclick="removeOption()">Retirer</button>
 
   <h2 id="result"></h2>
 
@@ -70,6 +74,17 @@
     ];
     let angle = 0;
     let spinning = false;
+
+    function updateRemoveDropdown() {
+      const select = document.getElementById("removeSelect");
+      select.innerHTML = "";
+      options.forEach(opt => {
+        const option = document.createElement("option");
+        option.value = opt;
+        option.textContent = opt;
+        select.appendChild(option);
+      });
+    }
 
     function drawWheel() {
       const radius = canvas.width / 2;
@@ -106,7 +121,7 @@
     }
 
     function spinWheel() {
-      if (spinning) return;
+      if (spinning || options.length === 0) return;
       spinning = true;
 
       const spinTime = 3000 + Math.random() * 2000;
@@ -141,10 +156,23 @@
       if (newVal && !options.includes(newVal)) {
         options.push(newVal);
         document.getElementById("newOption").value = "";
+        updateRemoveDropdown();
         drawWheel();
       }
     }
 
+    function removeOption() {
+      const select = document.getElementById("removeSelect");
+      const val = select.value;
+      if (val) {
+        options = options.filter(opt => opt !== val);
+        updateRemoveDropdown();
+        drawWheel();
+        document.getElementById("result").innerText = `❌ Supprimé : ${val}`;
+      }
+    }
+
+    updateRemoveDropdown();
     drawWheel();
   </script>
 </body>
