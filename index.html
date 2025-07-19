@@ -103,7 +103,7 @@
 
 <div id="slot">
   <div class="choices" id="choicesContainer"></div>
-  <div id="noChoices">🎲 Aucun choix ajouté</div>
+  <div id="noChoices"> Aucun choix ajouté</div>
 </div>
 
 <button class="button" onclick="spin()">Lancer</button>
@@ -180,7 +180,7 @@
     if (index >= 0) {
       const removed = choices.splice(index, 1)[0];
       localStorage.setItem('choices', JSON.stringify(choices));
-      feedback.innerHTML = `❌ Supprimé : ${removed.text}`;
+      feedback.innerHTML = ` Supprimé : ${removed.text}`;
       renderChoices();
     }
   }
@@ -213,7 +213,7 @@
     container.style.transform = `translateY(-${scroll}px)`;
 
     setTimeout(() => {
-      feedback.innerHTML = `🎯 Choix sélectionné : ${choices[target].text}`;
+      feedback.innerHTML = ` Choix sélectionné : ${choices[target].text}`;
     }, 2000);
   }
 
