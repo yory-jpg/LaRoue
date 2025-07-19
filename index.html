@@ -1,8 +1,9 @@
+
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Roue des Choix</title>
   <style>
     body {
@@ -36,15 +37,8 @@
       font-size: 1rem;
       margin: 0.5rem;
     }
-    @media (max-width: 600px) {
-      canvas {
-        width: 100%;
-        height: auto;
-      }
-      button, input, select {
-        width: 90%;
-        font-size: 1rem;
-      }
+    .form-group {
+      margin-top: 1rem;
     }
   </style>
 </head>
@@ -54,11 +48,17 @@
   <br>
   <button onclick="spinWheel()">Tourner la roue</button>
   <br><br>
-  <input type="text" id="newOption" placeholder="Ajouter un jeu ou une série">
-  <button onclick="addOption()">Ajouter</button>
-  <br><br>
-  <select id="removeSelect"></select>
-  <button onclick="removeOption()">Retirer</button>
+
+  <div class="form-group">
+    <input type="text" id="newOption" placeholder="Ajouter un jeu ou une série">
+    <input type="file" id="imageInput" accept="image/*">
+    <button onclick="addOption()">Ajouter</button>
+  </div>
+
+  <div class="form-group">
+    <select id="removeSelect"></select>
+    <button onclick="removeOption()">Retirer</button>
+  </div>
 
   <h2 id="result"></h2>
 
@@ -66,11 +66,9 @@
     const canvas = document.getElementById("wheelCanvas");
     const ctx = canvas.getContext("2d");
     let options = [
-      "The Heaven Official's Blessing", "Desperate Housewifes", "MZDS", "Sasaki et Miyano",
-      "Link Click", "SK8 the Infinity", "Given", "Stranger by the Shore",
-      "Yes Ka No Ka Hanbun Ka", "Banana Fish", "No 6", "Seraph of the End",
-      "Vanitas No Carte", "Malcolm", "Heartstone", "League of Legends",
-      "Roblox", "Minecraft", "Undertale", "Wolvesville"
+      { name: "The Office" },
+      { name: "Dark" },
+      { name: "Overcooked" }
     ];
     let angle = 0;
     let spinning = false;
@@ -80,8 +78,8 @@
       select.innerHTML = "";
       options.forEach(opt => {
         const option = document.createElement("option");
-        option.value = opt;
-        option.textContent = opt;
+        option.value = opt.name;
+        option.textContent = opt.name;
         select.appendChild(option);
       });
     }
@@ -108,7 +106,7 @@
         ctx.textAlign = "right";
         ctx.fillStyle = "#fff";
         ctx.font = "16px sans-serif";
-        ctx.fillText(option, radius - 10, 10);
+        ctx.fillText(option.name, radius - 10, 10);
         ctx.restore();
       });
 
@@ -139,8 +137,10 @@
         if (progress < 1) {
           requestAnimationFrame(animate);
         } else {
-          const selected = options[Math.floor(((2 * Math.PI - (angle % (2 * Math.PI))) / (2 * Math.PI)) * options.length) % options.length];
-          document.getElementById("result").innerText = `🎉 Résultat : ${selected} 🎉`;
+          const index = Math.floor(((2 * Math.PI - (angle % (2 * Math.PI))) / (2 * Math.PI)) * options.length) % options.length;
+          const selected = options[index];
+          document.getElementById("result").innerHTML = `🎉 Résultat : ${selected.name} 🎉` +
+            (selected.image ? `<br><img src="${selected.image}" width="150" />` : "");
           spinning = false;
         }
       }
@@ -152,9 +152,22 @@
     }
 
     function addOption() {
-      const newVal = document.getElementById("newOption").value.trim();
-      if (newVal && !options.includes(newVal)) {
-        options.push(newVal);
+      const name = document.getElementById("newOption").value.trim();
+      const fileInput = document.getElementById("imageInput");
+      if (!name || options.find(o => o.name === name)) return;
+
+      if (fileInput.files.length > 0) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          options.push({ name, image: e.target.result });
+          document.getElementById("newOption").value = "";
+          fileInput.value = "";
+          updateRemoveDropdown();
+          drawWheel();
+        };
+        reader.readAsDataURL(fileInput.files[0]);
+      } else {
+        options.push({ name });
         document.getElementById("newOption").value = "";
         updateRemoveDropdown();
         drawWheel();
@@ -162,14 +175,11 @@
     }
 
     function removeOption() {
-      const select = document.getElementById("removeSelect");
-      const val = select.value;
-      if (val) {
-        options = options.filter(opt => opt !== val);
-        updateRemoveDropdown();
-        drawWheel();
-        document.getElementById("result").innerText = `❌ Supprimé : ${val}`;
-      }
+      const val = document.getElementById("removeSelect").value;
+      options = options.filter(opt => opt.name !== val);
+      updateRemoveDropdown();
+      drawWheel();
+      document.getElementById("result").innerText = `❌ Supprimé : ${val}`;
     }
 
     updateRemoveDropdown();
